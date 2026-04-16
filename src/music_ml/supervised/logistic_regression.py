@@ -96,7 +96,7 @@ class LogisticRegression:
         Returns
         -------
         numpy.ndarray of shape (n_samples,)
-            Predicted probabilities for class 1.
+            Predicted probabilities for class 1 in the range [0, 1].
         """
         if self.weights_ is None or self.bias_ is None:
             raise ValueError("Model must be fitted before calling predict_proba.")
@@ -108,9 +108,25 @@ class LogisticRegression:
             raise ValueError("X must have the same number of features used during fit.")
 
         linear_output = X_arr @ self.weights_ + self.bias_
-        return self._sigmoid(linear_output)
+        probabilities = self._sigmoid(linear_output)
+        return np.clip(probabilities, 0.0, 1.0)
 
-    def predict(self, X):
-        """Predict binary labels using a 0.5 probability threshold."""
+    def predict(self, X, threshold=0.5):
+        """Predict binary labels from class probabilities.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Input feature matrix.
+        threshold : float, default=0.5
+            Decision threshold applied to positive-class probabilities.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_samples,)
+            Predicted class labels (0 or 1).
+        """
+        if not 0.0 <= float(threshold) <= 1.0:
+            raise ValueError("threshold must be between 0 and 1.")
         probabilities = self.predict_proba(X)
-        return (probabilities >= 0.5).astype(int)
+        return (probabilities >= threshold).astype(int)
