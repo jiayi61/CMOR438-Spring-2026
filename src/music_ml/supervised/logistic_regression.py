@@ -46,6 +46,11 @@ class LogisticRegression:
         LogisticRegression
             Fitted estimator.
         """
+        if self.learning_rate <= 0:
+            raise ValueError("learning_rate must be positive.")
+        if self.n_iters <= 0:
+            raise ValueError("n_iters must be a positive integer.")
+
         X_arr = np.asarray(X, dtype=float)
         y_arr = np.asarray(y, dtype=float)
 
@@ -55,6 +60,8 @@ class LogisticRegression:
             raise ValueError("y must be a 1D array of binary labels.")
         if X_arr.shape[0] != y_arr.shape[0]:
             raise ValueError("X and y must contain the same number of samples.")
+        if X_arr.shape[0] == 0:
+            raise ValueError("X and y must contain at least one sample.")
 
         unique_values = np.unique(y_arr)
         if not np.all(np.isin(unique_values, [0, 1])):
@@ -66,20 +73,15 @@ class LogisticRegression:
         self.loss_history_ = []
 
         for _ in range(self.n_iters):
-            linear_output = X_arr @ self.weights_ + self.bias_
-            y_pred = self._sigmoid(linear_output)
+            logits = X_arr @ self.weights_ + self.bias_
+            probs = self._sigmoid(logits)
 
-            dw = (X_arr.T @ (y_pred - y_arr)) / n_samples
-            db = np.sum(y_pred - y_arr) / n_samples
+            error = probs - y_arr
+            dw = (X_arr.T @ error) / n_samples
+            db = np.mean(error)
 
             self.weights_ -= self.learning_rate * dw
             self.bias_ -= self.learning_rate * db
-
-            eps = 1e-15
-            loss = -np.mean(
-                y_arr * np.log(y_pred + eps) + (1.0 - y_arr) * np.log(1.0 - y_pred + eps)
-            )
-            self.loss_history_.append(float(loss))
 
         return self
 
