@@ -2,6 +2,7 @@
 
 from .preprocessing import StandardScaler, train_test_split
 from .supervised import LogisticRegression
+from .unsupervised import KMeans
 
 __all__ = [
     "supervised",
@@ -9,4 +10,5 @@ __all__ = [
     "train_test_split",
     "StandardScaler",
     "LogisticRegression",
+    "KMeans",
 ]
