@@ -60,3 +60,68 @@ def train_test_split(X, y, test_size=0.2, shuffle=True, random_state=None):
     y_test = y_arr[test_indices]
 
     return X_train, X_test, y_train, y_test
+
+
+class StandardScaler:
+    """Scale features to zero mean and unit variance.
+
+    The scaler learns column-wise means and standard deviations from training
+    data. Columns with zero variance are left unchanged during scaling.
+    """
+
+    def __init__(self):
+        """Initialize an unfitted scaler."""
+        self.mean_ = None
+        self.scale_ = None
+
+    def fit(self, X):
+        """Compute per-feature mean and standard deviation.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Data used to estimate scaling statistics.
+
+        Returns
+        -------
+        StandardScaler
+            The fitted scaler instance.
+        """
+        X_arr = np.asarray(X, dtype=float)
+        if X_arr.ndim != 2:
+            raise ValueError("X must be a 2D array of shape (n_samples, n_features).")
+        if X_arr.shape[0] == 0:
+            raise ValueError("X must contain at least one sample.")
+
+        self.mean_ = np.mean(X_arr, axis=0)
+        std = np.std(X_arr, axis=0)
+        self.scale_ = np.where(std == 0.0, 1.0, std)
+        return self
+
+    def transform(self, X):
+        """Scale data using previously computed statistics.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Data to scale.
+
+        Returns
+        -------
+        numpy.ndarray
+            Scaled data array.
+        """
+        if self.mean_ is None or self.scale_ is None:
+            raise ValueError("StandardScaler must be fitted before calling transform.")
+
+        X_arr = np.asarray(X, dtype=float)
+        if X_arr.ndim != 2:
+            raise ValueError("X must be a 2D array of shape (n_samples, n_features).")
+        if X_arr.shape[1] != self.mean_.shape[0]:
+            raise ValueError("X must have the same number of features used in fit.")
+
+        return (X_arr - self.mean_) / self.scale_
+
+    def fit_transform(self, X):
+        """Fit the scaler to ``X`` and return the transformed data."""
+        return self.fit(X).transform(X)
