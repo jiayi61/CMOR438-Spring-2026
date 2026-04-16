@@ -31,6 +31,7 @@ class KMeans:
         self.labels_ = None
         self.inertia_ = None
         self.n_iter_ = 0
+        self.centroid_shift_ = None
 
     def _validate_hyperparameters(self):
         """Validate clustering hyperparameters."""
@@ -77,6 +78,12 @@ class KMeans:
 
         return new_centroids
 
+    def _compute_inertia(self, X, centroids, labels):
+        """Compute within-cluster sum of squared distances (inertia)."""
+        squared_distances = self._compute_squared_distances(X, centroids)
+        closest_squared_distances = squared_distances[np.arange(X.shape[0]), labels]
+        return float(np.sum(closest_squared_distances))
+
     def fit(self, X):
         """Fit KMeans clustering on data matrix ``X``.
 
@@ -107,6 +114,7 @@ class KMeans:
         self.labels_ = None
         self.inertia_ = None
         self.n_iter_ = 0
+        self.centroid_shift_ = None
 
         for iteration in range(1, self.max_iters + 1):
             labels = self._assign_clusters(X_arr, self.centroids_)
@@ -116,13 +124,12 @@ class KMeans:
             self.centroids_ = new_centroids
             self.labels_ = labels
             self.n_iter_ = iteration
+            self.centroid_shift_ = float(centroid_shift)
 
             if centroid_shift <= self.tol:
                 break
 
-        squared_distances = self._compute_squared_distances(X_arr, self.centroids_)
-        closest_squared_distances = squared_distances[np.arange(n_samples), self.labels_]
-        self.inertia_ = float(np.sum(closest_squared_distances))
+        self.inertia_ = self._compute_inertia(X_arr, self.centroids_, self.labels_)
 
         return self
 
