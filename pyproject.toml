@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "music_ml"
+version = "0.1.0"
+description = "From-scratch machine learning package for music analytics."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "CMOR 438 / INDE 577 Final Project" }
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
