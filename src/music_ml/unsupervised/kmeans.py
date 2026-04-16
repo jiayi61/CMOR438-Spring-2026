@@ -42,9 +42,40 @@ class KMeans:
             raise ValueError("tol must be non-negative.")
 
     @staticmethod
-    def _compute_distances(X, centroids):
-        """Compute pairwise Euclidean distances to each centroid."""
-        return np.linalg.norm(X[:, np.newaxis, :] - centroids[np.newaxis, :, :], axis=2)
+    def _compute_squared_distances(X, centroids):
+        """Compute pairwise squared Euclidean distances to each centroid."""
+        diff = X[:, np.newaxis, :] - centroids[np.newaxis, :, :]
+        return np.sum(diff * diff, axis=2)
+
+    def _initialize_centroids(self, X):
+        """Initialize centroids by sampling distinct training rows."""
+        rng = np.random.default_rng(self.random_state)
+        n_samples = X.shape[0]
+        initial_indices = rng.choice(n_samples, size=self.n_clusters, replace=False)
+        return X[initial_indices].copy()
+
+    def _assign_clusters(self, X, centroids):
+        """Assign each sample to its nearest centroid."""
+        squared_distances = self._compute_squared_distances(X, centroids)
+        return np.argmin(squared_distances, axis=1)
+
+    def _update_centroids(self, X, labels, previous_centroids):
+        """Update centroids as means of assigned points.
+
+        Empty clusters are reinitialized to random data points.
+        """
+        new_centroids = previous_centroids.copy()
+        rng = np.random.default_rng(self.random_state)
+
+        for cluster_idx in range(self.n_clusters):
+            cluster_points = X[labels == cluster_idx]
+            if cluster_points.shape[0] == 0:
+                replacement_index = rng.integers(0, X.shape[0])
+                new_centroids[cluster_idx] = X[replacement_index]
+            else:
+                new_centroids[cluster_idx] = cluster_points.mean(axis=0)
+
+        return new_centroids
 
     def fit(self, X):
         """Fit KMeans clustering on data matrix ``X``.
@@ -71,23 +102,15 @@ class KMeans:
         if self.n_clusters > n_samples:
             raise ValueError("n_clusters cannot exceed the number of samples.")
 
-        rng = np.random.default_rng(self.random_state)
-        initial_indices = rng.choice(n_samples, size=self.n_clusters, replace=False)
-        self.centroids_ = X_arr[initial_indices].copy()
+        self.centroids_ = self._initialize_centroids(X_arr)
 
         self.labels_ = None
         self.inertia_ = None
         self.n_iter_ = 0
 
         for iteration in range(1, self.max_iters + 1):
-            distances = self._compute_distances(X_arr, self.centroids_)
-            labels = np.argmin(distances, axis=1)
-
-            new_centroids = self.centroids_.copy()
-            for cluster_idx in range(self.n_clusters):
-                cluster_points = X_arr[labels == cluster_idx]
-                if cluster_points.shape[0] > 0:
-                    new_centroids[cluster_idx] = cluster_points.mean(axis=0)
+            labels = self._assign_clusters(X_arr, self.centroids_)
+            new_centroids = self._update_centroids(X_arr, labels, self.centroids_)
 
             centroid_shift = np.linalg.norm(new_centroids - self.centroids_)
             self.centroids_ = new_centroids
@@ -97,9 +120,9 @@ class KMeans:
             if centroid_shift <= self.tol:
                 break
 
-        final_distances = self._compute_distances(X_arr, self.centroids_)
-        closest_distances = final_distances[np.arange(n_samples), self.labels_]
-        self.inertia_ = float(np.sum(closest_distances**2))
+        squared_distances = self._compute_squared_distances(X_arr, self.centroids_)
+        closest_squared_distances = squared_distances[np.arange(n_samples), self.labels_]
+        self.inertia_ = float(np.sum(closest_squared_distances))
 
         return self
 
@@ -125,5 +148,4 @@ class KMeans:
         if X_arr.shape[1] != self.centroids_.shape[1]:
             raise ValueError("X must have the same number of features used during fit.")
 
-        distances = self._compute_distances(X_arr, self.centroids_)
-        return np.argmin(distances, axis=1)
+        return self._assign_clusters(X_arr, self.centroids_)
