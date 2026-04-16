@@ -31,6 +31,15 @@ class LogisticRegression:
         z_clipped = np.clip(z, -500, 500)
         return 1.0 / (1.0 + np.exp(-z_clipped))
 
+    @staticmethod
+    def _binary_cross_entropy(y_true, y_prob):
+        """Compute mean binary cross-entropy loss."""
+        eps = 1e-15
+        y_prob_clipped = np.clip(y_prob, eps, 1.0 - eps)
+        return -np.mean(
+            y_true * np.log(y_prob_clipped) + (1.0 - y_true) * np.log(1.0 - y_prob_clipped)
+        )
+
     def fit(self, X, y):
         """Fit model parameters with batch gradient descent.
 
@@ -82,6 +91,9 @@ class LogisticRegression:
 
             self.weights_ -= self.learning_rate * dw
             self.bias_ -= self.learning_rate * db
+
+            loss = self._binary_cross_entropy(y_arr, probs)
+            self.loss_history_.append(float(loss))
 
         return self
 
